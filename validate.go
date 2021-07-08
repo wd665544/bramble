@@ -403,7 +403,7 @@ func validateBoundaryQuery(f *ast.FieldDefinition) error {
 
 	if f.Arguments[0].Type.Elem != nil {
 		// array type check
-		if idsField := f.Arguments.ForName("ids"); idsField == nil || idsField.Type.String() != "[ID!]" {
+		if idsField := f.Arguments.ForName("ids"); idsField == nil || idsField.Type.String() != "[ID!]" && idsField.Type.String() != "[ID!]!" {
 			return fmt.Errorf(`boundary query must have a single "id: ID!" argument`)
 		}
 
