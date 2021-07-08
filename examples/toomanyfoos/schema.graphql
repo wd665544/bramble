@@ -1,0 +1,18 @@
+directive @boundary on OBJECT | FIELD_DEFINITION
+
+type Service {
+  name: String!
+  version: String!
+  schema: String!
+}
+
+type Query {
+  getFoo(id: ID!): Foo @boundary
+  foo(id: ID!): Foo
+  toManyFoos: [Foo!]!
+  service: Service!
+}
+
+type Foo @boundary {
+  id: ID!
+}
