@@ -336,29 +336,55 @@ func usesFieldsBoundaryDirective(schema *ast.Schema) bool {
 
 // validateBoundaryFields checks that all boundary types have a getter and all getters are matching with a boundary type
 func validateBoundaryFields(schema *ast.Schema) error {
-	boundaryTypes := make(map[string]struct{})
+	type boundaryType struct {
+		hasIndividualGetter bool
+		hasArrayGetter      bool
+	}
+
+	boundaryTypes := make(map[string]boundaryType)
 	for _, t := range schema.Types {
 		if t.Kind == ast.Object && isBoundaryObject(t) {
-			boundaryTypes[t.Name] = struct{}{}
+			boundaryTypes[t.Name] = boundaryType{
+				hasIndividualGetter: false,
+				hasArrayGetter:      false,
+			}
 		}
 	}
 
 	for _, f := range schema.Query.Fields {
 		if hasBoundaryDirective(f) {
-			if _, ok := boundaryTypes[f.Type.Name()]; !ok {
+			bt, ok := boundaryTypes[f.Type.Name()]
+			if !ok {
 				return fmt.Errorf("declared boundary query for non-boundary type %q", f.Type.Name())
 			}
 
-			delete(boundaryTypes, f.Type.Name())
+			// array type check
+			if f.Type.NamedType == "" && f.Type.Elem != nil {
+				if bt.hasArrayGetter {
+					return fmt.Errorf("declared duplicate array query for boundary type %q", f.Type.Name())
+				}
+
+				bt.hasArrayGetter = true
+			} else {
+				if bt.hasIndividualGetter {
+					return fmt.Errorf("declared duplicate query for boundary type %q", f.Type.Name())
+				}
+
+				bt.hasIndividualGetter = true
+			}
+
+			boundaryTypes[f.Type.Name()] = bt
 		}
 	}
 
-	if len(boundaryTypes) > 0 {
-		var missingBoundaryQueries []string
-		for k := range boundaryTypes {
+	var missingBoundaryQueries []string
+	for k, bt := range boundaryTypes {
+		if !bt.hasArrayGetter && !bt.hasIndividualGetter {
 			missingBoundaryQueries = append(missingBoundaryQueries, k)
 		}
+	}
 
+	if len(missingBoundaryQueries) > 0 {
 		return fmt.Errorf("missing boundary queries for the following types: %v", missingBoundaryQueries)
 	}
 

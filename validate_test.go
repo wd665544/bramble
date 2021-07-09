@@ -656,6 +656,37 @@ func TestSchemaValidateBoundaryFields(t *testing.T) {
 		}
 		`).assertInvalid(`invalid boundary query "foo": return type of boundary query should be nullable`, validateBoundaryQueries)
 	})
+
+	t.Run("allow single and array boundary getter", func(t *testing.T) {
+		withSchema(t, `
+		directive @boundary on OBJECT | FIELD_DEFINITION
+
+		type Foo @boundary {
+			id: ID!
+		}
+
+		type Query {
+			foo(id: ID!): Foo @boundary
+			severalFoos(ids: [ID!]!): [Foo]! @boundary
+		}
+		`).assertValid(validateBoundaryFields)
+	})
+
+	t.Run("don't allow duplicated boundary getter", func(t *testing.T) {
+		withSchema(t, `
+		directive @boundary on OBJECT | FIELD_DEFINITION
+
+		type Foo @boundary {
+			id: ID!
+		}
+
+		type Query {
+			foo(id: ID!): Foo @boundary
+			severalFoos(ids: [ID!]!): [Foo]! @boundary
+			anotherFoo(ids: [ID!]!): Foo @boundary
+		}
+		`).assertInvalid(`declared duplicate query for boundary type "Foo"`, validateBoundaryFields)
+	})
 }
 
 func TestSchemaValidateBoundaryObjectsFormat(t *testing.T) {
