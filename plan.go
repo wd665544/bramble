@@ -379,6 +379,11 @@ func (m BoundaryQueriesMap) RegisterQuery(serviceURL, typeName, query string, ar
 		m[serviceURL] = make(map[string]BoundaryQuery)
 	}
 
+	// prefer array queries for boundary types. So skip if we get a duplicate that isn't an Array
+	if boundaryQuery, ok := m[serviceURL][typeName]; ok && boundaryQuery.Array {
+		return
+	}
+
 	m[serviceURL][typeName] = BoundaryQuery{Query: query, Array: array}
 }
 
