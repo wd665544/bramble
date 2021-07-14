@@ -525,7 +525,7 @@ func TestQueryExecutionMultipleServices(t *testing.T) {
 				handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.Write([]byte(`{
 						"data": {
-							"_0": {
+							"_1": {
 								"id": "1",
 								"release": 2007
 							}
